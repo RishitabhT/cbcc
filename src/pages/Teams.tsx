@@ -62,19 +62,14 @@ const Teams: React.FC = () => {
 
   const handleCreateTeam = async (teamData: Omit<Team, 'id' | 'createdAt' | 'members'>) => {
     try {
-      const { data: profile } = await supabase
-        .from('cbcc_profiles')
-        .select('id')
-        .eq('user_id', user?.id)
-        .single();
-
       const { data, error } = await supabase
         .from('teams')
         .insert({
           name: teamData.name,
           description: teamData.description,
           color: teamData.color,
-          team_head_id: teamData.teamHeadId
+          team_head_id: teamData.teamHeadId,
+          created_by: user?.id
         })
         .select()
         .single();

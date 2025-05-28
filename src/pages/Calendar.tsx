@@ -48,7 +48,7 @@ const CalendarPage: React.FC = () => {
   const fetchEvents = async () => {
     try {
       const { data, error } = await supabase
-        .from('events' as any)
+        .from('events')
         .select(`
           *,
           team:teams(name, color),
@@ -60,7 +60,7 @@ const CalendarPage: React.FC = () => {
         console.error('Error fetching events:', error);
         // Fallback query without joins if relationships fail
         const { data: fallbackData, error: fallbackError } = await supabase
-          .from('events' as any)
+          .from('events')
           .select('*')
           .order('start_time', { ascending: true });
 
@@ -113,21 +113,15 @@ const CalendarPage: React.FC = () => {
 
   const handleCreateEvent = async (newEvent: Omit<CalendarEvent, 'id'>) => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles' as any)
-        .select('id')
-        .eq('id', user?.id)
-        .single();
-
       const { data, error } = await supabase
-        .from('events' as any)
+        .from('events')
         .insert({
           title: newEvent.title,
           description: newEvent.description,
           start_time: newEvent.start.toISOString(),
           end_time: newEvent.end.toISOString(),
           team_id: newEvent.teamId,
-          created_by: profile?.id,
+          created_by: user?.id,
           location: newEvent.location,
           attendees: newEvent.attendees || []
         })
@@ -154,7 +148,7 @@ const CalendarPage: React.FC = () => {
   const handleUpdateEvent = async (eventId: string, updates: Partial<CalendarEvent>) => {
     try {
       const { error } = await supabase
-        .from('events' as any)
+        .from('events')
         .update({
           title: updates.title,
           description: updates.description,
@@ -186,7 +180,7 @@ const CalendarPage: React.FC = () => {
   const handleDeleteEvent = async (eventId: string) => {
     try {
       const { error } = await supabase
-        .from('events' as any)
+        .from('events')
         .delete()
         .eq('id', eventId);
 

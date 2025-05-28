@@ -12,6 +12,7 @@ interface EditEventDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdateEvent: (eventId: string, updates: Partial<CalendarEvent>) => void;
+  onDeleteEvent: (eventId: string) => void;
 }
 
 export const EditEventDialog: React.FC<EditEventDialogProps> = ({
@@ -19,6 +20,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
   isOpen,
   onClose,
   onUpdateEvent,
+  onDeleteEvent,
 }) => {
   const [formData, setFormData] = useState({
     title: event.title,
@@ -61,11 +63,16 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
     onClose();
   };
 
+  const handleDelete = () => {
+    onDeleteEvent(event.id);
+    onClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-cbcc-primary">Edit Event</DialogTitle>
+          <DialogTitle className="text-emerald-700">Edit Event</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,7 +84,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Enter event title"
               required
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
           
@@ -89,7 +96,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the event"
               rows={3}
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
 
@@ -102,7 +109,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
                 value={formData.startDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
             
@@ -114,7 +121,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
                 value={formData.startTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
           </div>
@@ -128,7 +135,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
                 value={formData.endDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
             
@@ -140,7 +147,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
                 value={formData.endTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
           </div>
@@ -152,15 +159,23 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
               value={formData.location}
               onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
               placeholder="Event location"
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
           
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl border-emerald-200">
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl">
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={handleDelete} 
+              className="rounded-xl"
+            >
+              Delete
+            </Button>
+            <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
               Update Event
             </Button>
           </div>

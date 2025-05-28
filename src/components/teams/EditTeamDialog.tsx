@@ -50,8 +50,8 @@ export const EditTeamDialog: React.FC<EditTeamDialogProps> = ({
   const fetchUsers = async () => {
     try {
       const { data, error } = await supabase
-        .from('cbcc_profiles')
-        .select('id, name, email')
+        .from('profiles')
+        .select('id, name, username')
         .order('name');
 
       if (error) throw error;
@@ -71,7 +71,7 @@ export const EditTeamDialog: React.FC<EditTeamDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-cbcc-primary">Edit Team</DialogTitle>
+          <DialogTitle className="text-emerald-700">Edit Team</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,7 +83,7 @@ export const EditTeamDialog: React.FC<EditTeamDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Enter team name"
               required
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
           
@@ -95,7 +95,7 @@ export const EditTeamDialog: React.FC<EditTeamDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the team's purpose"
               rows={3}
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
           
@@ -105,13 +105,13 @@ export const EditTeamDialog: React.FC<EditTeamDialogProps> = ({
               value={formData.teamHeadId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, teamHeadId: value }))}
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="rounded-xl border-emerald-200">
                 <SelectValue placeholder="Select team head" />
               </SelectTrigger>
               <SelectContent>
                 {users.map(user => (
-                  <SelectItem key={user.id} value={user.email}>
-                    {user.name} ({user.email})
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.name} ({user.username})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -136,10 +136,10 @@ export const EditTeamDialog: React.FC<EditTeamDialogProps> = ({
           </div>
           
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl border-emerald-200">
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl">
+            <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
               Update Team
             </Button>
           </div>

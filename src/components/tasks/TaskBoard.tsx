@@ -56,7 +56,7 @@ export const TaskBoard: React.FC = () => {
   const fetchTasks = async () => {
     try {
       const { data, error } = await supabase
-        .from('tasks' as any)
+        .from('tasks')
         .select(`
           *,
           assigned_user:profiles!tasks_assigned_to_fkey(name, username),
@@ -69,7 +69,7 @@ export const TaskBoard: React.FC = () => {
         console.error('Error fetching tasks:', error);
         // Fallback query without joins if relationships fail
         const { data: fallbackData, error: fallbackError } = await supabase
-          .from('tasks' as any)
+          .from('tasks')
           .select('*')
           .order('created_at', { ascending: false });
 
@@ -130,20 +130,14 @@ export const TaskBoard: React.FC = () => {
 
   const handleCreateTask = async (newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles' as any)
-        .select('id')
-        .eq('id', user?.id)
-        .single();
-
       const { data: assignedProfile } = await supabase
-        .from('profiles' as any)
+        .from('profiles')
         .select('id')
         .eq('username', newTask.assignedTo)
         .single();
 
       const { data, error } = await supabase
-        .from('tasks' as any)
+        .from('tasks')
         .insert({
           title: newTask.title,
           description: newTask.description,
@@ -153,7 +147,7 @@ export const TaskBoard: React.FC = () => {
           status: newTask.status,
           assigned_to: assignedProfile?.id,
           team_id: newTask.teamId,
-          created_by: profile?.id,
+          created_by: user?.id,
           subtasks: newTask.subtasks || []
         })
         .select()
@@ -179,7 +173,7 @@ export const TaskBoard: React.FC = () => {
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
       const { error } = await supabase
-        .from('tasks' as any)
+        .from('tasks')
         .update({
           title: updates.title,
           description: updates.description,
@@ -212,7 +206,7 @@ export const TaskBoard: React.FC = () => {
   const handleDeleteTask = async (taskId: string) => {
     try {
       const { error } = await supabase
-        .from('tasks' as any)
+        .from('tasks')
         .delete()
         .eq('id', taskId);
 
