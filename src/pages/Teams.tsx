@@ -31,7 +31,6 @@ const Teams: React.FC = () => {
         .from('teams')
         .select(`
           *,
-          team_head:team_head_id(name, email),
           team_members(count)
         `)
         .order('created_at', { ascending: false });
@@ -42,8 +41,8 @@ const Teams: React.FC = () => {
         id: team.id,
         name: team.name,
         description: team.description || '',
-        teamHeadId: team.team_head?.email || '',
-        members: [], // Will be populated when needed
+        teamHeadId: team.team_head_id || '',
+        members: [],
         createdAt: new Date(team.created_at),
         color: team.color || '#008000'
       })) || [];
@@ -63,11 +62,10 @@ const Teams: React.FC = () => {
 
   const handleCreateTeam = async (teamData: Omit<Team, 'id' | 'createdAt' | 'members'>) => {
     try {
-      // Get team head user ID
-      const { data: teamHeadData } = await supabase
+      const { data: profile } = await supabase
         .from('cbcc_profiles')
         .select('id')
-        .eq('email', teamData.teamHeadId)
+        .eq('user_id', user?.id)
         .single();
 
       const { data, error } = await supabase
@@ -76,8 +74,7 @@ const Teams: React.FC = () => {
           name: teamData.name,
           description: teamData.description,
           color: teamData.color,
-          team_head_id: teamHeadData?.id,
-          created_by: user?.id
+          team_head_id: teamData.teamHeadId
         })
         .select()
         .single();
@@ -101,23 +98,13 @@ const Teams: React.FC = () => {
 
   const handleUpdateTeam = async (teamId: string, updates: Partial<Team>) => {
     try {
-      let teamHeadId = null;
-      if (updates.teamHeadId) {
-        const { data: teamHeadData } = await supabase
-          .from('cbcc_profiles')
-          .select('id')
-          .eq('email', updates.teamHeadId)
-          .single();
-        teamHeadId = teamHeadData?.id;
-      }
-
       const { error } = await supabase
         .from('teams')
         .update({
           name: updates.name,
           description: updates.description,
           color: updates.color,
-          team_head_id: teamHeadId,
+          team_head_id: updates.teamHeadId,
           updated_at: new Date().toISOString()
         })
         .eq('id', teamId);
@@ -165,27 +152,27 @@ const Teams: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cbcc-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cbcc-primary"></div>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-cbcc-background">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100">
       <div className="p-4 pb-20">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
             <img 
               src="/lovable-uploads/2748bf15-4308-48e5-ae2e-d5f095dfa1a4.png" 
               alt="Campus Binge Logo" 
-              className="h-8"
+              className="h-10"
             />
-            <h1 className="text-2xl font-bold text-cbcc-primary">Teams</h1>
+            <h1 className="text-3xl font-bold text-emerald-800">Teams</h1>
           </div>
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <Plus className="h-4 w-4 mr-2" />
             New Team
@@ -193,19 +180,19 @@ const Teams: React.FC = () => {
         </div>
 
         {teams.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-2">No teams yet</h3>
-            <p className="text-gray-600 mb-4">Create your first team to get started</p>
+          <div className="text-center py-16">
+            <h3 className="text-xl font-semibold mb-4 text-emerald-800">No teams yet</h3>
+            <p className="text-emerald-600 mb-6">Create your first team to get started</p>
             <Button 
               onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-200"
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Team
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {teams.map(team => (
               <TeamCard 
                 key={team.id} 

@@ -5,9 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarEvent } from '@/types/team';
-import { supabase } from '@/integrations/supabase/client';
 
 interface EditEventDialogProps {
   event: CalendarEvent;
@@ -31,11 +29,9 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
     endTime: event.end.toTimeString().slice(0, 5),
     location: event.location || ''
   });
-  const [teams, setTeams] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen) {
-      fetchTeams();
       setFormData({
         title: event.title,
         description: event.description || '',
@@ -47,20 +43,6 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
       });
     }
   }, [isOpen, event]);
-
-  const fetchTeams = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('id, name')
-        .order('name');
-
-      if (error) throw error;
-      setTeams(data || []);
-    } catch (error) {
-      console.error('Error fetching teams:', error);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

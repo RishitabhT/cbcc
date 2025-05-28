@@ -16,25 +16,23 @@ const Calendar: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
       fetchEvents();
-      checkGoogleConnection();
     }
   }, [user]);
 
   const fetchEvents = async () => {
     try {
       const { data, error } = await supabase
-        .from('calendar_events')
+        .from('events')
         .select(`
           *,
           team:teams(name, color),
-          creator:created_by(name)
+          creator:cbcc_profiles!events_created_by_fkey(name)
         `)
         .order('start_time', { ascending: true });
 
@@ -67,35 +65,23 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const checkGoogleConnection = async () => {
-    // Check if user has connected Google Calendar
-    try {
-      const { data, error } = await supabase
-        .from('user_integrations')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('integration_type', 'google_calendar')
-        .single();
-
-      if (data && !error) {
-        setIsGoogleConnected(true);
-      }
-    } catch (error) {
-      console.log('No Google Calendar connection found');
-    }
-  };
-
   const handleCreateEvent = async (eventData: Omit<CalendarEvent, 'id' | 'createdBy'>) => {
     try {
+      const { data: profile } = await supabase
+        .from('cbcc_profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+
       const { data, error } = await supabase
-        .from('calendar_events')
+        .from('events')
         .insert({
           title: eventData.title,
           description: eventData.description,
           start_time: eventData.start.toISOString(),
           end_time: eventData.end.toISOString(),
           team_id: eventData.teamId,
-          created_by: user?.id,
+          created_by: profile?.id,
           attendees: eventData.attendees,
           location: eventData.location
         })
@@ -122,7 +108,7 @@ const Calendar: React.FC = () => {
   const handleUpdateEvent = async (eventId: string, updates: Partial<CalendarEvent>) => {
     try {
       const { error } = await supabase
-        .from('calendar_events')
+        .from('events')
         .update({
           title: updates.title,
           description: updates.description,
@@ -153,7 +139,7 @@ const Calendar: React.FC = () => {
   const handleDeleteEvent = async (eventId: string) => {
     try {
       const { error } = await supabase
-        .from('calendar_events')
+        .from('events')
         .delete()
         .eq('id', eventId);
 
@@ -174,82 +160,56 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const connectGoogleCalendar = async () => {
-    try {
-      // Call Google OAuth endpoint
-      const { data, error } = await supabase.functions.invoke('google-calendar-auth', {
-        body: { action: 'connect' }
-      });
-
-      if (error) throw error;
-
-      if (data.authUrl) {
-        window.open(data.authUrl, '_blank');
-        toast({
-          title: "Redirecting to Google",
-          description: "Please authorize CBCC to access your Google Calendar"
-        });
-      }
-    } catch (error) {
-      console.error('Error connecting Google Calendar:', error);
-      toast({
-        title: "Error",
-        description: "Failed to connect Google Calendar",
-        variant: "destructive"
-      });
-    }
-  };
-
   const upcomingEvents = events.filter(event => event.start > new Date()).slice(0, 3);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cbcc-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cbcc-primary"></div>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-cbcc-background">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100">
       <div className="p-4 pb-20">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
             <img 
               src="/lovable-uploads/2748bf15-4308-48e5-ae2e-d5f095dfa1a4.png" 
               alt="Campus Binge Logo" 
-              className="h-8"
+              className="h-10"
             />
-            <h1 className="text-2xl font-bold text-cbcc-primary">Calendar</h1>
+            <h1 className="text-3xl font-bold text-emerald-800">Calendar</h1>
           </div>
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <Plus className="h-4 w-4 mr-2" />
             New Event
           </Button>
         </div>
 
-        <Card className="shadow-cbcc border-0 mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-cbcc-primary">
+        <Card className="shadow-xl border-0 mb-6 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
+            <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
               Upcoming Events
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             {upcomingEvents.length > 0 ? (
               <div className="space-y-4">
                 {upcomingEvents.map(event => (
-                  <div key={event.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div key={event.id} className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
                     <div className="flex-1">
-                      <h3 className="font-semibold">{event.title}</h3>
-                      <p className="text-sm text-gray-600">
+                      <h3 className="font-semibold text-emerald-800">{event.title}</h3>
+                      <p className="text-sm text-emerald-600">
                         {event.start.toLocaleDateString()} at {event.start.toLocaleTimeString()}
                       </p>
                       {event.location && (
-                        <p className="text-sm text-gray-500">{event.location}</p>
+                        <p className="text-sm text-emerald-500">{event.location}</p>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -257,6 +217,7 @@ const Calendar: React.FC = () => {
                         size="sm"
                         variant="ghost"
                         onClick={() => setEditingEvent(event)}
+                        className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100"
                       >
                         Edit
                       </Button>
@@ -264,7 +225,7 @@ const Calendar: React.FC = () => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDeleteEvent(event.id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="text-red-600 hover:text-red-800 hover:bg-red-100"
                       >
                         Delete
                       </Button>
@@ -273,34 +234,23 @@ const Calendar: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-center text-gray-600 py-4">No upcoming events</p>
+              <p className="text-center text-gray-600 py-8">No upcoming events</p>
             )}
           </CardContent>
         </Card>
 
-        <Card className="shadow-cbcc border-0">
-          <CardContent className="p-6 text-center">
-            <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Google Calendar Integration</h3>
-            {isGoogleConnected ? (
-              <div>
-                <p className="text-green-600 mb-4">✓ Google Calendar is connected</p>
-                <Button variant="outline" className="rounded-xl">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Open Google Calendar
-                </Button>
-              </div>
-            ) : (
-              <div>
-                <p className="text-gray-600 mb-4">Connect your Google Calendar to sync events and meetings</p>
-                <Button 
-                  onClick={connectGoogleCalendar}
-                  className="bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl"
-                >
-                  Connect Google Calendar
-                </Button>
-              </div>
-            )}
+        <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <CardContent className="p-8 text-center">
+            <CalendarIcon className="h-16 w-16 text-emerald-400 mx-auto mb-6" />
+            <h3 className="text-xl font-semibold mb-4 text-emerald-800">Google Calendar Integration</h3>
+            <div>
+              <p className="text-gray-600 mb-6">Connect your Google Calendar to sync events and meetings</p>
+              <Button 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                Connect Google Calendar
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

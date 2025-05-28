@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cbcc_profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          role?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          role?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       comment_vibes: {
         Row: {
           comment_id: string
@@ -185,6 +215,69 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          attendees: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_time: string
+          google_event_id: string | null
+          id: string
+          is_google_event: boolean | null
+          location: string | null
+          start_time: string
+          team_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attendees?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_time: string
+          google_event_id?: string | null
+          id?: string
+          is_google_event?: boolean | null
+          location?: string | null
+          start_time: string
+          team_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attendees?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_time?: string
+          google_event_id?: string | null
+          id?: string
+          is_google_event?: boolean | null
+          location?: string | null
+          start_time?: string
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -472,6 +565,142 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string
+          due_time: string | null
+          id: string
+          priority: string
+          status: string
+          subtasks: Json | null
+          team_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date: string
+          due_time?: string | null
+          id?: string
+          priority: string
+          status?: string
+          subtasks?: Json | null
+          team_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string
+          due_time?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          subtasks?: Json | null
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          joined_at: string
+          role: string | null
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          role?: string | null
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          role?: string | null
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          team_head_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          team_head_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          team_head_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       threads: {
         Row: {

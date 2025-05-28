@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, X } from 'lucide-react';
 import { Task } from '@/types/team';
 import { supabase } from '@/integrations/supabase/client';
@@ -80,16 +81,22 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
       const { data, error } = await supabase
         .from('team_members')
         .select(`
-          user:cbcc_profiles(id, name, email)
+          user:profiles(id, name, username)
         `)
         .eq('team_id', teamId);
 
       if (error) throw error;
       
-      const members = data?.map(item => item.user).filter(Boolean) || [];
+      const members = data?.map(item => ({
+        id: item.user?.id || '',
+        name: item.user?.name || '',
+        email: item.user?.username || ''
+      })).filter(member => member.id) || [];
+      
       setTeamMembers(members);
     } catch (error) {
       console.error('Error fetching team members:', error);
+      setTeamMembers([]);
     }
   };
 
@@ -106,6 +113,12 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
   const removeSubtask = (id: string) => {
     setSubtasks(subtasks.filter(st => st.id !== id));
+  };
+
+  const toggleSubtask = (id: string) => {
+    setSubtasks(subtasks.map(st => 
+      st.id === id ? { ...st, completed: !st.completed } : st
+    ));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,7 +138,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
       status: 'To Do',
       dueDate: new Date(formData.dueDate),
       dueTime: formData.dueTime || undefined,
-      createdBy: 'current-user@campusbinge.com',
+      createdBy: 'current-user',
       subtasks
     });
     
@@ -147,7 +160,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-cbcc-primary">Create New Task</DialogTitle>
+          <DialogTitle className="text-emerald-700">Create New Task</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -159,7 +172,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Enter task title"
               required
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
           
@@ -171,7 +184,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the task"
               rows={3}
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
 
@@ -181,7 +194,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
               value={formData.teamId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, teamId: value, assignedTo: '' }))}
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="rounded-xl border-emerald-200">
                 <SelectValue placeholder="Select team" />
               </SelectTrigger>
               <SelectContent>
@@ -203,7 +216,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 value={formData.dueDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
             
@@ -214,7 +227,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 type="time"
                 value={formData.dueTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, dueTime: e.target.value }))}
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
           </div>
@@ -227,7 +240,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 setFormData(prev => ({ ...prev, priority: value }))
               }
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="rounded-xl border-emerald-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -244,7 +257,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
               value={formData.assignedTo}
               onValueChange={(value) => setFormData(prev => ({ ...prev, assignedTo: value }))}
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="rounded-xl border-emerald-200">
                 <SelectValue placeholder="Select team member" />
               </SelectTrigger>
               <SelectContent>
@@ -264,10 +277,10 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
                 placeholder="Add a subtask"
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
               />
-              <Button type="button" onClick={addSubtask} size="sm" className="rounded-xl">
+              <Button type="button" onClick={addSubtask} size="sm" className="rounded-xl bg-emerald-500 hover:bg-emerald-600">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -275,14 +288,20 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
             {subtasks.length > 0 && (
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {subtasks.map(subtask => (
-                  <div key={subtask.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="text-sm">{subtask.title}</span>
+                  <div key={subtask.id} className="flex items-center gap-2 p-2 bg-emerald-50 rounded border border-emerald-100">
+                    <Checkbox 
+                      checked={subtask.completed}
+                      onCheckedChange={() => toggleSubtask(subtask.id)}
+                    />
+                    <span className={`text-sm flex-1 ${subtask.completed ? 'line-through text-gray-500' : ''}`}>
+                      {subtask.title}
+                    </span>
                     <Button
                       type="button"
                       onClick={() => removeSubtask(subtask.id)}
                       size="sm"
                       variant="ghost"
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -293,10 +312,10 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
           </div>
           
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl border-emerald-200">
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl">
+            <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
               Create Task
             </Button>
           </div>

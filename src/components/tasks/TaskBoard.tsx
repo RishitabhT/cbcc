@@ -38,9 +38,9 @@ export const TaskBoard: React.FC = () => {
         .from('tasks')
         .select(`
           *,
-          assigned_user:assigned_to(name, email),
+          assigned_user:profiles!tasks_assigned_to_fkey(name, username),
           team:teams(name, color),
-          creator:created_by(name)
+          creator:cbcc_profiles!tasks_created_by_fkey(name)
         `)
         .order('created_at', { ascending: false });
 
@@ -54,7 +54,7 @@ export const TaskBoard: React.FC = () => {
         dueTime: task.due_time || undefined,
         priority: task.priority,
         status: task.status,
-        assignedTo: task.assigned_user?.email || '',
+        assignedTo: task.assigned_user?.username || '',
         teamId: task.team_id,
         createdBy: task.creator?.name || '',
         createdAt: new Date(task.created_at),
@@ -81,6 +81,18 @@ export const TaskBoard: React.FC = () => {
 
   const handleCreateTask = async (newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      const { data: profile } = await supabase
+        .from('cbcc_profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+
+      const { data: assignedProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', newTask.assignedTo)
+        .single();
+
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -90,9 +102,9 @@ export const TaskBoard: React.FC = () => {
           due_time: newTask.dueTime,
           priority: newTask.priority,
           status: newTask.status,
-          assigned_to: (await supabase.from('cbcc_profiles').select('id').eq('email', newTask.assignedTo).single()).data?.id,
+          assigned_to: assignedProfile?.id,
           team_id: newTask.teamId,
-          created_by: user?.id,
+          created_by: profile?.id,
           subtasks: newTask.subtasks || []
         })
         .select()
@@ -175,7 +187,7 @@ export const TaskBoard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cbcc-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
       </div>
     );
   }
@@ -187,13 +199,13 @@ export const TaskBoard: React.FC = () => {
           <img 
             src="/lovable-uploads/2748bf15-4308-48e5-ae2e-d5f095dfa1a4.png" 
             alt="Campus Binge Logo" 
-            className="h-8"
+            className="h-10"
           />
-          <h1 className="text-2xl font-bold text-cbcc-primary">Task Board</h1>
+          <h1 className="text-3xl font-bold text-emerald-800">Task Board</h1>
         </div>
         <Button 
           onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Task
@@ -202,7 +214,7 @@ export const TaskBoard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statusColumns.map(column => (
-          <Card key={column.id} className="shadow-cbcc border-0">
+          <Card key={column.id} className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
             <CardHeader className={`rounded-t-lg ${column.color}`}>
               <CardTitle className="text-lg font-semibold text-center">
                 {column.title}
