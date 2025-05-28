@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -47,7 +48,7 @@ const CalendarPage: React.FC = () => {
   const fetchEvents = async () => {
     try {
       const { data, error } = await supabase
-        .from('events')
+        .from('events' as any)
         .select(`
           *,
           team:teams(name, color),
@@ -59,13 +60,13 @@ const CalendarPage: React.FC = () => {
         console.error('Error fetching events:', error);
         // Fallback query without joins if relationships fail
         const { data: fallbackData, error: fallbackError } = await supabase
-          .from('events')
+          .from('events' as any)
           .select('*')
           .order('start_time', { ascending: true });
 
         if (fallbackError) throw fallbackError;
 
-        const formattedEvents: CalendarEvent[] = fallbackData?.map(event => ({
+        const formattedEvents: CalendarEvent[] = fallbackData?.map((event: any) => ({
           id: event.id,
           title: event.title,
           description: event.description,
@@ -83,7 +84,7 @@ const CalendarPage: React.FC = () => {
         return;
       }
 
-      const formattedEvents: CalendarEvent[] = data?.map(event => ({
+      const formattedEvents: CalendarEvent[] = data?.map((event: any) => ({
         id: event.id,
         title: event.title,
         description: event.description,
@@ -113,13 +114,13 @@ const CalendarPage: React.FC = () => {
   const handleCreateEvent = async (newEvent: Omit<CalendarEvent, 'id'>) => {
     try {
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('profiles' as any)
         .select('id')
         .eq('id', user?.id)
         .single();
 
       const { data, error } = await supabase
-        .from('events')
+        .from('events' as any)
         .insert({
           title: newEvent.title,
           description: newEvent.description,
@@ -153,7 +154,7 @@ const CalendarPage: React.FC = () => {
   const handleUpdateEvent = async (eventId: string, updates: Partial<CalendarEvent>) => {
     try {
       const { error } = await supabase
-        .from('events')
+        .from('events' as any)
         .update({
           title: updates.title,
           description: updates.description,
@@ -185,7 +186,7 @@ const CalendarPage: React.FC = () => {
   const handleDeleteEvent = async (eventId: string) => {
     try {
       const { error } = await supabase
-        .from('events')
+        .from('events' as any)
         .delete()
         .eq('id', eventId);
 
@@ -222,7 +223,14 @@ const CalendarPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100">
       <div className="p-4 pb-20">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-emerald-800">Calendar</h1>
+          <div className="flex items-center gap-4">
+            <img 
+              src="/lovable-uploads/2748bf15-4308-48e5-ae2e-d5f095dfa1a4.png" 
+              alt="Campus Binge Logo" 
+              className="h-10"
+            />
+            <h1 className="text-3xl font-bold text-emerald-800">Calendar</h1>
+          </div>
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"

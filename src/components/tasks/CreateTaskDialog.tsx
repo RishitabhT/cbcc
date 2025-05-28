@@ -65,7 +65,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
   const fetchTeams = async () => {
     try {
       const { data, error } = await supabase
-        .from('teams')
+        .from('teams' as any)
         .select('id, name')
         .order('name');
 
@@ -79,7 +79,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
   const fetchTeamMembers = async (teamId: string) => {
     try {
       const { data, error } = await supabase
-        .from('team_members')
+        .from('team_members' as any)
         .select(`
           user:profiles(id, name, username)
         `)
@@ -87,11 +87,11 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
       if (error) throw error;
       
-      const members = data?.map(item => ({
+      const members = data?.map((item: any) => ({
         id: item.user?.id || '',
         name: item.user?.name || '',
         email: item.user?.username || ''
-      })).filter(member => member.id) || [];
+      })).filter((member: any) => member.id) || [];
       
       setTeamMembers(members);
     } catch (error) {

@@ -42,7 +42,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   const fetchTeams = async () => {
     try {
       const { data, error } = await supabase
-        .from('teams')
+        .from('teams' as any)
         .select('id, name')
         .order('name');
 
@@ -88,7 +88,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-cbcc-primary">Create New Event</DialogTitle>
+          <DialogTitle className="text-emerald-700">Create New Event</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,7 +100,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Enter event title"
               required
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
           
@@ -112,7 +112,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the event"
               rows={3}
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
 
@@ -125,7 +125,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 value={formData.startDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
             
@@ -137,7 +137,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 value={formData.startTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
           </div>
@@ -151,7 +151,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 value={formData.endDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
             
@@ -163,7 +163,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 value={formData.endTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
                 required
-                className="rounded-xl"
+                className="rounded-xl border-emerald-200 focus:border-emerald-500"
               />
             </div>
           </div>
@@ -175,7 +175,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               value={formData.location}
               onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
               placeholder="Event location"
-              className="rounded-xl"
+              className="rounded-xl border-emerald-200 focus:border-emerald-500"
             />
           </div>
 
@@ -185,7 +185,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               value={formData.teamId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, teamId: value }))}
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="rounded-xl border-emerald-200">
                 <SelectValue placeholder="Select team" />
               </SelectTrigger>
               <SelectContent>
@@ -200,10 +200,10 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
           </div>
           
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl border-emerald-200">
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl">
+            <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
               Create Event
             </Button>
           </div>
