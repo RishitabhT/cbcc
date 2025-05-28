@@ -32,6 +32,27 @@ export const TaskBoard: React.FC = () => {
     }
   }, [user]);
 
+  const parseSubtasks = (subtasks: any): Array<{ id: string; title: string; completed: boolean; }> => {
+    if (!subtasks) return [];
+    if (Array.isArray(subtasks)) {
+      return subtasks.map((item: any) => {
+        if (typeof item === 'object' && item !== null) {
+          return {
+            id: item.id || String(Date.now()),
+            title: item.title || '',
+            completed: Boolean(item.completed)
+          };
+        }
+        return {
+          id: String(Date.now()),
+          title: String(item),
+          completed: false
+        };
+      });
+    }
+    return [];
+  };
+
   const fetchTasks = async () => {
     try {
       const { data, error } = await supabase
@@ -40,7 +61,7 @@ export const TaskBoard: React.FC = () => {
           *,
           assigned_user:profiles!tasks_assigned_to_fkey(name, username),
           team:teams(name, color),
-          creator:cbcc_profiles!tasks_created_by_fkey(name)
+          creator:profiles!tasks_created_by_fkey(name)
         `)
         .order('created_at', { ascending: false });
 
@@ -67,7 +88,7 @@ export const TaskBoard: React.FC = () => {
           createdBy: 'Unknown User',
           createdAt: new Date(task.created_at),
           updatedAt: new Date(task.updated_at),
-          subtasks: Array.isArray(task.subtasks) ? task.subtasks : []
+          subtasks: parseSubtasks(task.subtasks)
         })) || [];
 
         setTasks(formattedTasks);
@@ -84,10 +105,10 @@ export const TaskBoard: React.FC = () => {
         status: task.status as 'To Do' | 'In Progress' | 'Done' | 'Blocked',
         assignedTo: task.assigned_user?.username || 'Unknown User',
         teamId: task.team_id || '',
-        createdBy: task.creator?.name || 'Unknown User',
+        createdBy: (task.creator as any)?.name || 'Unknown User',
         createdAt: new Date(task.created_at),
         updatedAt: new Date(task.updated_at),
-        subtasks: Array.isArray(task.subtasks) ? task.subtasks : []
+        subtasks: parseSubtasks(task.subtasks)
       })) || [];
 
       setTasks(formattedTasks);
