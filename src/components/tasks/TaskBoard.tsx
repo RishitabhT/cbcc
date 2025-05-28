@@ -1,53 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Task } from '@/types/team';
 import { TaskCard } from './TaskCard';
 import { CreateTaskDialog } from './CreateTaskDialog';
-
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Design new IG post template',
-    description: 'Create a modern template for Instagram posts',
-    dueDate: new Date('2024-01-15'),
-    priority: 'High',
-    status: 'To Do',
-    assignedTo: 'john@campusbinge.com',
-    teamId: 'content',
-    createdBy: 'admin@campusbinge.com',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '2',
-    title: 'Plan campus event outreach',
-    description: 'Coordinate with universities for upcoming events',
-    dueDate: new Date('2024-01-20'),
-    priority: 'Medium',
-    status: 'In Progress',
-    assignedTo: 'jane@campusbinge.com',
-    teamId: 'outreach',
-    createdBy: 'admin@campusbinge.com',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '3',
-    title: 'Update team documentation',
-    description: 'Update the team handbook with new processes',
-    dueDate: new Date('2024-01-10'),
-    priority: 'Low',
-    status: 'Done',
-    assignedTo: 'mike@campusbinge.com',
-    teamId: 'content',
-    createdBy: 'admin@campusbinge.com',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import { EditTaskDialog } from './EditTaskDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const statusColumns = [
   { id: 'To Do', title: 'To Do', color: 'bg-gray-100' },
@@ -57,38 +19,181 @@ const statusColumns = [
 ];
 
 export const TaskBoard: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      fetchTasks();
+    }
+  }, [user]);
+
+  const fetchTasks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          assigned_user:assigned_to(name, email),
+          team:teams(name, color),
+          creator:created_by(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedTasks: Task[] = data?.map(task => ({
+        id: task.id,
+        title: task.title,
+        description: task.description || '',
+        dueDate: new Date(task.due_date),
+        dueTime: task.due_time || undefined,
+        priority: task.priority,
+        status: task.status,
+        assignedTo: task.assigned_user?.email || '',
+        teamId: task.team_id,
+        createdBy: task.creator?.name || '',
+        createdAt: new Date(task.created_at),
+        updatedAt: new Date(task.updated_at),
+        subtasks: task.subtasks || []
+      })) || [];
+
+      setTasks(formattedTasks);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load tasks",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getTasksByStatus = (status: string) => {
     return tasks.filter(task => task.status === status);
   };
 
-  const handleCreateTask = (newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const task: Task = {
-      ...newTask,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setTasks(prev => [...prev, task]);
+  const handleCreateTask = async (newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          title: newTask.title,
+          description: newTask.description,
+          due_date: newTask.dueDate.toISOString().split('T')[0],
+          due_time: newTask.dueTime,
+          priority: newTask.priority,
+          status: newTask.status,
+          assigned_to: (await supabase.from('cbcc_profiles').select('id').eq('email', newTask.assignedTo).single()).data?.id,
+          team_id: newTask.teamId,
+          created_by: user?.id,
+          subtasks: newTask.subtasks || []
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await fetchTasks();
+      toast({
+        title: "Success",
+        description: "Task created successfully"
+      });
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create task",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleTaskStatusChange = (taskId: string, newStatus: Task['status']) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, status: newStatus, updatedAt: new Date() }
-        : task
-    ));
+  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          title: updates.title,
+          description: updates.description,
+          due_date: updates.dueDate?.toISOString().split('T')[0],
+          due_time: updates.dueTime,
+          priority: updates.priority,
+          status: updates.status,
+          subtasks: updates.subtasks,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      await fetchTasks();
+      toast({
+        title: "Success",
+        description: "Task updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive"
+      });
+    }
   };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      await fetchTasks();
+      toast({
+        title: "Success",
+        description: "Task deleted successfully"
+      });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cbcc-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 pb-20">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-cbcc-primary">Task Board</h1>
+        <div className="flex items-center gap-4">
+          <img 
+            src="/lovable-uploads/2748bf15-4308-48e5-ae2e-d5f095dfa1a4.png" 
+            alt="Campus Binge Logo" 
+            className="h-8"
+          />
+          <h1 className="text-2xl font-bold text-cbcc-primary">Task Board</h1>
+        </div>
         <Button 
           onClick={() => setIsCreateDialogOpen(true)}
-          className="gradient-primary rounded-xl"
+          className="bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Task
@@ -111,7 +216,9 @@ export const TaskBoard: React.FC = () => {
                 <TaskCard 
                   key={task.id} 
                   task={task} 
-                  onStatusChange={handleTaskStatusChange}
+                  onStatusChange={(taskId, newStatus) => handleUpdateTask(taskId, { status: newStatus })}
+                  onEdit={setEditingTask}
+                  onDelete={handleDeleteTask}
                 />
               ))}
             </CardContent>
@@ -124,6 +231,15 @@ export const TaskBoard: React.FC = () => {
         onClose={() => setIsCreateDialogOpen(false)}
         onCreateTask={handleCreateTask}
       />
+
+      {editingTask && (
+        <EditTaskDialog
+          task={editingTask}
+          isOpen={!!editingTask}
+          onClose={() => setEditingTask(null)}
+          onUpdateTask={handleUpdateTask}
+        />
+      )}
     </div>
   );
 };

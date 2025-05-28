@@ -14,6 +14,7 @@ export interface Task {
   title: string;
   description: string;
   dueDate: Date;
+  dueTime?: string;
   priority: 'Low' | 'Medium' | 'High';
   status: 'To Do' | 'In Progress' | 'Done' | 'Blocked';
   assignedTo: string;
@@ -21,4 +22,23 @@ export interface Task {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+  subtasks?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+  }>;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  start: Date;
+  end: Date;
+  teamId?: string;
+  createdBy: string;
+  attendees?: string[];
+  location?: string;
+  isGoogleEvent?: boolean;
+  googleEventId?: string;
 }

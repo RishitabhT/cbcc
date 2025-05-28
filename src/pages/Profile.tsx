@@ -13,19 +13,26 @@ const Profile: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-cbcc-background">
+    <div className="min-h-screen bg-gradient-to-br from-cbcc-background to-green-50">
       <div className="p-4 pb-20">
-        <h1 className="text-2xl font-bold text-cbcc-primary mb-6">Profile</h1>
+        <div className="flex items-center gap-4 mb-6">
+          <img 
+            src="/lovable-uploads/2748bf15-4308-48e5-ae2e-d5f095dfa1a4.png" 
+            alt="Campus Binge Logo" 
+            className="h-8"
+          />
+          <h1 className="text-2xl font-bold text-cbcc-primary">Profile</h1>
+        </div>
 
-        <Card className="shadow-cbcc border-0 mb-6">
+        <Card className="shadow-2xl border-0 mb-6 bg-white/95 backdrop-blur-sm">
           <CardHeader>
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-cbcc-primary rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-cbcc-primary to-cbcc-green-light rounded-full flex items-center justify-center">
                 <User className="h-8 w-8 text-white" />
               </div>
               <div>
                 <CardTitle className="text-xl">{user.name}</CardTitle>
-                <Badge className="mt-1" variant="secondary">
+                <Badge className="mt-1 bg-cbcc-primary text-white" variant="secondary">
                   {user.role}
                 </Badge>
               </div>
@@ -47,18 +54,18 @@ const Profile: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-cbcc border-0 mb-6">
+        <Card className="shadow-2xl border-0 mb-6 bg-white/95 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-lg">Quick Stats</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-cbcc-primary">12</div>
+              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                <div className="text-2xl font-bold text-cbcc-primary">0</div>
                 <div className="text-sm text-gray-600">Tasks Completed</div>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">5</div>
+              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">0</div>
                 <div className="text-sm text-gray-600">Active Tasks</div>
               </div>
             </div>
@@ -68,7 +75,7 @@ const Profile: React.FC = () => {
         <Button 
           onClick={logout}
           variant="outline" 
-          className="w-full rounded-xl text-red-600 border-red-200 hover:bg-red-50"
+          className="w-full rounded-xl text-red-600 border-red-200 hover:bg-red-50 bg-white/95 backdrop-blur-sm"
         >
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out

@@ -6,21 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, X } from 'lucide-react';
 import { Task } from '@/types/team';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
-interface CreateTaskDialogProps {
+interface EditTaskDialogProps {
+  task: Task;
   isOpen: boolean;
   onClose: () => void;
-  onCreateTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
-}
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
 }
 
 interface Subtask {
@@ -29,69 +23,34 @@ interface Subtask {
   completed: boolean;
 }
 
-export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
+export const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
+  task,
   isOpen,
   onClose,
-  onCreateTask,
+  onUpdateTask,
 }) => {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    dueDate: '',
-    dueTime: '',
-    priority: 'Medium' as Task['priority'],
-    assignedTo: '',
-    teamId: '',
+    title: task.title,
+    description: task.description,
+    dueDate: task.dueDate.toISOString().split('T')[0],
+    dueTime: task.dueTime || '',
+    priority: task.priority,
+    status: task.status,
   });
-  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
   const [newSubtask, setNewSubtask] = useState('');
-  const [teams, setTeams] = useState<any[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen) {
-      fetchTeams();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (formData.teamId) {
-      fetchTeamMembers(formData.teamId);
-    }
-  }, [formData.teamId]);
-
-  const fetchTeams = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('teams')
-        .select('id, name')
-        .order('name');
-
-      if (error) throw error;
-      setTeams(data || []);
-    } catch (error) {
-      console.error('Error fetching teams:', error);
-    }
-  };
-
-  const fetchTeamMembers = async (teamId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('team_members')
-        .select(`
-          user:cbcc_profiles(id, name, email)
-        `)
-        .eq('team_id', teamId);
-
-      if (error) throw error;
-      
-      const members = data?.map(item => item.user).filter(Boolean) || [];
-      setTeamMembers(members);
-    } catch (error) {
-      console.error('Error fetching team members:', error);
-    }
-  };
+    setFormData({
+      title: task.title,
+      description: task.description,
+      dueDate: task.dueDate.toISOString().split('T')[0],
+      dueTime: task.dueTime || '',
+      priority: task.priority,
+      status: task.status,
+    });
+    setSubtasks(task.subtasks || []);
+  }, [task]);
 
   const addSubtask = () => {
     if (newSubtask.trim()) {
@@ -108,38 +67,22 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
     setSubtasks(subtasks.filter(st => st.id !== id));
   };
 
+  const toggleSubtask = (id: string) => {
+    setSubtasks(subtasks.map(st => 
+      st.id === id ? { ...st, completed: !st.completed } : st
+    ));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.dueDate) {
-      toast({
-        title: "Error",
-        description: "Please select a due date",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    onCreateTask({
+    onUpdateTask(task.id, {
       ...formData,
-      status: 'To Do',
       dueDate: new Date(formData.dueDate),
       dueTime: formData.dueTime || undefined,
-      createdBy: 'current-user@campusbinge.com',
       subtasks
     });
     
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      dueDate: '',
-      dueTime: '',
-      priority: 'Medium',
-      assignedTo: '',
-      teamId: '',
-    });
-    setSubtasks([]);
     onClose();
   };
 
@@ -147,7 +90,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-cbcc-primary">Create New Task</DialogTitle>
+          <DialogTitle className="text-cbcc-primary">Edit Task</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -173,25 +116,6 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
               rows={3}
               className="rounded-xl"
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="team">Team</Label>
-            <Select
-              value={formData.teamId}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, teamId: value, assignedTo: '' }))}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Select team" />
-              </SelectTrigger>
-              <SelectContent>
-                {teams.map(team => (
-                  <SelectItem key={team.id} value={team.id}>
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -219,42 +143,45 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
-            <Select
-              value={formData.priority}
-              onValueChange={(value: Task['priority']) => 
-                setFormData(prev => ({ ...prev, priority: value }))
-              }
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="assignedTo">Assign To</Label>
-            <Select
-              value={formData.assignedTo}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, assignedTo: value }))}
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Select team member" />
-              </SelectTrigger>
-              <SelectContent>
-                {teamMembers.map(member => (
-                  <SelectItem key={member.id} value={member.email}>
-                    {member.name} ({member.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority</Label>
+              <Select
+                value={formData.priority}
+                onValueChange={(value: Task['priority']) => 
+                  setFormData(prev => ({ ...prev, priority: value }))
+                }
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value: Task['status']) => 
+                  setFormData(prev => ({ ...prev, status: value }))
+                }
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="To Do">To Do</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Done">Done</SelectItem>
+                  <SelectItem value="Blocked">Blocked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -275,8 +202,14 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
             {subtasks.length > 0 && (
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {subtasks.map(subtask => (
-                  <div key={subtask.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="text-sm">{subtask.title}</span>
+                  <div key={subtask.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                    <Checkbox 
+                      checked={subtask.completed}
+                      onCheckedChange={() => toggleSubtask(subtask.id)}
+                    />
+                    <span className={`text-sm flex-1 ${subtask.completed ? 'line-through text-gray-500' : ''}`}>
+                      {subtask.title}
+                    </span>
                     <Button
                       type="button"
                       onClick={() => removeSubtask(subtask.id)}
@@ -297,7 +230,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
               Cancel
             </Button>
             <Button type="submit" className="flex-1 bg-cbcc-primary hover:bg-cbcc-green-dark text-white rounded-xl">
-              Create Task
+              Update Task
             </Button>
           </div>
         </form>
