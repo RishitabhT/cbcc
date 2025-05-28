@@ -36,7 +36,33 @@ const Calendar: React.FC = () => {
         `)
         .order('start_time', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching events:', error);
+        // Fallback query without joins if relationships fail
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('events')
+          .select('*')
+          .order('start_time', { ascending: true });
+
+        if (fallbackError) throw fallbackError;
+
+        const formattedEvents: CalendarEvent[] = fallbackData?.map(event => ({
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          start: new Date(event.start_time),
+          end: new Date(event.end_time),
+          teamId: event.team_id,
+          createdBy: 'Unknown User',
+          attendees: Array.isArray(event.attendees) ? event.attendees as string[] : [],
+          location: event.location,
+          isGoogleEvent: event.is_google_event,
+          googleEventId: event.google_event_id
+        })) || [];
+
+        setEvents(formattedEvents);
+        return;
+      }
 
       const formattedEvents: CalendarEvent[] = data?.map(event => ({
         id: event.id,
@@ -45,8 +71,8 @@ const Calendar: React.FC = () => {
         start: new Date(event.start_time),
         end: new Date(event.end_time),
         teamId: event.team_id,
-        createdBy: event.creator?.name || '',
-        attendees: event.attendees || [],
+        createdBy: event.creator?.name || 'Unknown User',
+        attendees: Array.isArray(event.attendees) ? event.attendees as string[] : [],
         location: event.location,
         isGoogleEvent: event.is_google_event,
         googleEventId: event.google_event_id

@@ -44,7 +44,35 @@ export const TaskBoard: React.FC = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        // Fallback query without joins if relationships fail
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('tasks')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (fallbackError) throw fallbackError;
+
+        const formattedTasks: Task[] = fallbackData?.map(task => ({
+          id: task.id,
+          title: task.title,
+          description: task.description || '',
+          dueDate: new Date(task.due_date),
+          dueTime: task.due_time || undefined,
+          priority: task.priority as 'Low' | 'Medium' | 'High',
+          status: task.status as 'To Do' | 'In Progress' | 'Done' | 'Blocked',
+          assignedTo: 'Unknown User',
+          teamId: task.team_id || '',
+          createdBy: 'Unknown User',
+          createdAt: new Date(task.created_at),
+          updatedAt: new Date(task.updated_at),
+          subtasks: Array.isArray(task.subtasks) ? task.subtasks : []
+        })) || [];
+
+        setTasks(formattedTasks);
+        return;
+      }
 
       const formattedTasks: Task[] = data?.map(task => ({
         id: task.id,
@@ -52,14 +80,14 @@ export const TaskBoard: React.FC = () => {
         description: task.description || '',
         dueDate: new Date(task.due_date),
         dueTime: task.due_time || undefined,
-        priority: task.priority,
-        status: task.status,
-        assignedTo: task.assigned_user?.username || '',
-        teamId: task.team_id,
-        createdBy: task.creator?.name || '',
+        priority: task.priority as 'Low' | 'Medium' | 'High',
+        status: task.status as 'To Do' | 'In Progress' | 'Done' | 'Blocked',
+        assignedTo: task.assigned_user?.username || 'Unknown User',
+        teamId: task.team_id || '',
+        createdBy: task.creator?.name || 'Unknown User',
         createdAt: new Date(task.created_at),
         updatedAt: new Date(task.updated_at),
-        subtasks: task.subtasks || []
+        subtasks: Array.isArray(task.subtasks) ? task.subtasks : []
       })) || [];
 
       setTasks(formattedTasks);
