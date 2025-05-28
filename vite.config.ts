@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['react-big-calendar', 'date-fns']
+    include: ['react-big-calendar', 'moment']
   },
   build: {
     rollupOptions: {
